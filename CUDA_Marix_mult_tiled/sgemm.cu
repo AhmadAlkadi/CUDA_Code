@@ -191,12 +191,19 @@ int main(int argc, char *argv[])
     time_to_add_seconds = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count() / 1e6f;
     printf("matrixMulKernel_1thread1row on GPU: %25s%9.6fs \n", "", time_to_add_seconds);
 
-
+    cudaDeviceProp deviceProp;
+    cudaGetDeviceProperties(&deviceProp, 0);
+    size_t maxSharedMem = deviceProp.sharedMemPerBlock;
+    if(max(2,k/2)*4<maxSharedMem){
     start_time = std::chrono::high_resolution_clock::now();
     basicSgemm_tiled(m,k,n,A_h,B_h,C_h,V_h);
     end_time = std::chrono::high_resolution_clock::now();
     time_to_add_seconds = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count() / 1e6f;
     printf("matrixMulKernel_tiled on GPU: %25s%9.6fs \n", "", time_to_add_seconds);
+    }
+    else {
+        printf("Error: Requested shared memory exceeds the maximum limit per block.\n");
+    }
 
     if(verify_result(A_h,B_h,C_h,V_h,n,m) == true){
         printf("Verifying result...TEST PASSED! \n");
